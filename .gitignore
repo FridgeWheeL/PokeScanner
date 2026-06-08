@@ -1,0 +1,37 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+[Dd]ebug/
+[Rr]elease/
+*.nupkg
+packages/
+
+## JetBrains Rider / ReSharper
+*.sln.DotSettings.user
+*.DotSettings.user
+_ReSharper*/
+
+## Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Environment / Secrets
+.env
+
+## Tessdata (large downloaded language data)
+PokeScanner/tessdata/
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Docker
+.dockerignore

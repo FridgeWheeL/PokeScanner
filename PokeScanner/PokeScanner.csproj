@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+        <UseWPF>true</UseWPF>
+        <ApplicationIcon>app.ico</ApplicationIcon>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="OpenCvSharp4.Windows" Version="4.10.0.20241108" />
+        <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
+        <PackageReference Include="Tesseract" Version="5.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\.env" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="tessdata\**" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="app.ico" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

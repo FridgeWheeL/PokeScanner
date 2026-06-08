@@ -1,0 +1,8 @@
+﻿I use collectr free non paid version to keep track of my pokemon card collection. 
+The free version only allows 30 card scans, so I am stuck loading them manually one by one on the website, 
+trying to shine a light on each card to identify the name, the number and whether it is a holo foil or reverse hollo-foil. 
+I think I might be able to write a pc app that can somehow use my iphone camera to capture all of this info and output it as text on my pc.
+
+So far ChatGPT recommended using camo camera with my iPhone. I have installed that and tested it. Next I will need to write some app. maybe in C# to help
+utilise the camera to scan the cards and then identify them, and output the card name and number so I can copy and paste it into the search box of collectr
+making it much easier to add them.
