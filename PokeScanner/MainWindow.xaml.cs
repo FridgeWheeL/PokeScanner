@@ -1054,17 +1054,41 @@ public partial class MainWindow : System.Windows.Window
     private void OpenLucky(CardResult? card, string site)
     {
         if (card == null) return;
-        var q = Uri.EscapeDataString($"{card.Name} {card.Number} {card.SetName} pokemon {site}");
-        var url = $"https://www.google.com/search?q={q}&btnI=1";
-        LogInfo($"[PokeScanner] Opening {site}: {url}");
-        try
+        var domain = site switch
         {
-            using var proc = new System.Diagnostics.Process();
-            proc.StartInfo.UseShellExecute = true;
-            proc.StartInfo.FileName = url;
-            proc.Start();
+            "collectr" => "https://app.getcollectr.com",
+            "tcgplayer" => "https://www.tcgplayer.com",
+            _ => null
+        };
+        if (domain != null)
+        {
+            var number = card.Number?.Replace("/", "-") ?? "";
+            var q = Uri.EscapeDataString($"{domain} : {card.Name} {number}");
+            var url = $"https://www.google.com/search?q={q}";
+            LogInfo($"[PokeScanner] Opening {site}: {url}");
+            try
+            {
+                using var proc = new System.Diagnostics.Process();
+                proc.StartInfo.UseShellExecute = true;
+                proc.StartInfo.FileName = url;
+                proc.Start();
+            }
+            catch { }
         }
-        catch { }
+        else
+        {
+            var q = Uri.EscapeDataString($"{card.Name} {card.Number} {card.SetName} pokemon {site}");
+            var url = $"https://www.google.com/search?q={q}&btnI=1";
+            LogInfo($"[PokeScanner] Opening {site}: {url}");
+            try
+            {
+                using var proc = new System.Diagnostics.Process();
+                proc.StartInfo.UseShellExecute = true;
+                proc.StartInfo.FileName = url;
+                proc.Start();
+            }
+            catch { }
+        }
     }
 
     private static readonly HttpClient _llmHttp = new() { Timeout = TimeSpan.FromSeconds(60) };
