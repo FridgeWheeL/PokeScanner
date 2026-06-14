@@ -12,7 +12,11 @@ dotnet build
 dotnet run
 ```
 
-Single `.csproj`, single project, no tests.
+Two projects:
+- `PokeScanner/` - Main application (WPF)
+- `PokeScanner.Tests/` - Unit tests (MSTest)
+
+For comprehensive architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ## Prerequisites (easy to miss)
 
@@ -46,3 +50,7 @@ Single `.csproj`, single project, no tests.
 - TCGdex API (`api.tcgdex.net/v2/en/cards`) needs no auth.
 - German set number pattern `NNN/NNN` extracted via regex and OCR digit correction map.
 - .env keys are trimmed and `Bearer ` prefix stripped.
+
+## Workspace tracking
+
+- All changes, decisions, and progress are logged in `WORKSPACE.md` at repo root. AI agents must read this file at the start of each session and append entries for any significant work performed.

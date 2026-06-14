@@ -39,19 +39,21 @@ public partial class MainWindow : System.Windows.Window
     private Mat? _prevRoiGray;
     private int _stableTicks;
     private string _selectedModel = "gemma3:12b";
-    private static readonly string[] AvailableModels =
+    private static readonly string[] DefaultAvailableModels =
     {
         "qwen3-vl:30b-a3b-instruct-q4_K_M",
         "gemma3:12b",
         "gemma4:12b",
     };
 
+    private SettingsContainer _appSettings = new();
+
     public MainWindow()
     {
         InitializeComponent();
         try { File.WriteAllText(LogPath, $"--- PokeScanner Debug Log {DateTime.Now:yyyy-MM-dd HH:mm:ss} ---\n"); } catch { }
         LogInfo("[PokeScanner] Log file: " + LogPath);
-        LoadEnv();
+        LoadSettings();
         Loaded += OnLoaded;
         Closed += OnClosed;
     }
@@ -88,6 +90,81 @@ public partial class MainWindow : System.Windows.Window
         }
     }
 
+    private void LoadSettings()
+    {
+        var settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
+        var loaded = new SettingsContainer();
+
+        if (File.Exists(settingsPath))
+        {
+            try
+            {
+                var json = File.ReadAllText(settingsPath);
+                var s = JsonSerializer.Deserialize<SettingsContainer>(json);
+                if (s != null)
+                {
+                    loaded = s;
+                    LogInfo("[PokeScanner] Loaded settings.json");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogInfo($"[PokeScanner] Failed to load settings.json: {ex.Message}");
+            }
+        }
+
+        if (string.IsNullOrEmpty(loaded.LlmBaseUrl))
+            loaded.LlmBaseUrl = "http://localhost:4000/chat/completions";
+        if (string.IsNullOrEmpty(loaded.AvailableModels))
+            loaded.AvailableModels = string.Join("\n", DefaultAvailableModels);
+        if (string.IsNullOrEmpty(loaded.DefaultModel))
+            loaded.DefaultModel = "gemma3:12b";
+
+        _appSettings = loaded;
+
+        if (string.IsNullOrEmpty(loaded.LlmApiKey))
+            LoadEnv();
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        var settingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
+        try
+        {
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            var json = JsonSerializer.Serialize(_appSettings, options);
+            await File.WriteAllTextAsync(settingsPath, json);
+            LogInfo("[PokeScanner] Saved settings.json");
+        }
+        catch (Exception ex)
+        {
+            LogInfo($"[PokeScanner] Failed to save settings.json: {ex.Message}");
+        }
+    }
+
+    private void PopulateModelSelectorFromSettings()
+    {
+        if (!string.IsNullOrEmpty(_appSettings.AvailableModels))
+        {
+            var models = _appSettings.AvailableModels.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(m => m.Trim())
+                .Where(m => !string.IsNullOrEmpty(m));
+
+            ModelSelector.Items.Clear();
+            foreach (var m in models)
+                ModelSelector.Items.Add(m);
+
+            if (ModelSelector.Items.Count > 0)
+            {
+                var currentSel = _appSettings.DefaultModel;
+                if (!string.IsNullOrEmpty(currentSel) && ModelSelector.Items.Contains(currentSel))
+                    ModelSelector.SelectedItem = currentSel;
+                else
+                    ModelSelector.SelectedIndex = 0;
+            }
+        }
+    }
+
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         LogInfo("[PokeScanner] Window loaded");
@@ -99,13 +176,13 @@ public partial class MainWindow : System.Windows.Window
         LogInfo($"[PokeScanner] Test image set: {testBmp.Width}x{testBmp.Height}");
 
         PopulateCameraList();
-        PopulateModelSelector();
+        PopulateModelSelectorFromSettings();
     }
 
     private void PopulateModelSelector()
     {
         ModelSelector.Items.Clear();
-        foreach (var m in AvailableModels)
+        foreach (var m in DefaultAvailableModels)
             ModelSelector.Items.Add(m);
         ModelSelector.SelectedItem = _selectedModel;
     }
@@ -1132,8 +1209,9 @@ public partial class MainWindow : System.Windows.Window
             };
 
             var json = JsonSerializer.Serialize(body);
-            var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4000/chat/completions");
-            request.Headers.Add("Authorization", $"Bearer {_llmKey ?? ""}");
+            var request = new HttpRequestMessage(HttpMethod.Post, _appSettings.LlmBaseUrl!);
+            if (!string.IsNullOrEmpty(_llmKey))
+                request.Headers.Add("Authorization", $"Bearer {_llmKey}");
             request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
             var response = await _llmHttp.SendAsync(request, ct);
@@ -1296,6 +1374,89 @@ public partial class MainWindow : System.Windows.Window
         _scanCts?.Dispose();
         StopCapture();
         _ocrEngine?.Dispose();
+        Dispatcher.InvokeAsync(() => SaveSettingsAsync());
+    }
+
+    private void SettingsToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        // Populate the settings panel with current config
+        var urlBox = FindName("SettingsUrlText") as System.Windows.Controls.TextBox;
+        if (urlBox != null) urlBox.Text = _appSettings.LlmBaseUrl ?? "";
+
+        var modList = FindName("SettingsModelList") as System.Windows.Controls.TextBox;
+        if (modList != null) modList.Text = _appSettings.AvailableModels ?? "";
+
+        var defMod = FindName("SettingsDefaultModel") as System.Windows.Controls.ComboBox;
+        if (defMod != null)
+        {
+            defMod.ItemsSource = null;
+            defMod.Items.Clear();
+            foreach (var m in GetAvailableModels())
+                defMod.Items.Add(m);
+            defMod.SelectedItem = _appSettings.DefaultModel;
+        }
+
+        SettingsPanel.Visibility = Visibility.Visible;
+    }
+
+    private void SettingsToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        SettingsPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private async void SettingsSave_Click(object sender, RoutedEventArgs e)
+    {
+        // Read all UI values into _appSettings
+        var urlBox = FindName("SettingsUrlText") as System.Windows.Controls.TextBox;
+        if (urlBox != null) _appSettings.LlmBaseUrl = urlBox.Text.Trim();
+
+        var keyBox = FindName("SettingsApiKeyBox") as System.Windows.Controls.PasswordBox;
+        if (keyBox != null) _appSettings.LlmApiKey = keyBox.Password.Trim().Trim('"').Trim('\'');
+
+        var modList = FindName("SettingsModelList") as System.Windows.Controls.TextBox;
+        if (modList != null) _appSettings.AvailableModels = modList.Text;
+
+        var defMod = FindName("SettingsDefaultModel") as System.Windows.Controls.ComboBox;
+        if (defMod?.SelectedItem is string modSel)
+            _appSettings.DefaultModel = modSel;
+
+        // Push new models to the main dropdown BEFORE saving
+        PopulateModelSelectorFromSettings();
+
+        _selectedModel = _appSettings.DefaultModel;
+        if (string.IsNullOrEmpty(_selectedModel))
+            _selectedModel = ModelSelector.Items.Cast<string>().FirstOrDefault() ?? "gemma3:12b";
+        ModelSelector.SelectedItem = _selectedModel;
+
+        await SaveSettingsAsync();
+
+        StatusText.Text = "Settings saved!";
+        SettingsToggleButton.IsChecked = false;
+    }
+
+    private string[] GetAvailableModels()
+    {
+        if (string.IsNullOrEmpty(_appSettings.AvailableModels))
+            return DefaultAvailableModels;
+        return _appSettings.AvailableModels.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(m => m.Trim())
+            .Where(m => !string.IsNullOrEmpty(m))
+            .ToArray();
+    }
+
+    private class SettingsContainer
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("llmBaseUrl")]
+        public string? LlmBaseUrl { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("llmApiKey")]
+        public string LlmApiKey { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("availableModels")]
+        public string AvailableModels { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonPropertyName("defaultModel")]
+        public string DefaultModel { get; set; } = "";
     }
 
     private record CameraItem(int Index, string Label)
