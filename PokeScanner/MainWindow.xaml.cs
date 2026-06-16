@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using Tesseract;
+using PokeScanner;
 
 namespace PokeScanner;
 
@@ -966,89 +967,47 @@ public partial class MainWindow : System.Windows.Window
 
     private CardResult? _selectedCard = null;
 
-    private class CardResult
+    private readonly ITcgdexApiService _tcgdexApiService;
+
+    public MainWindow(ITcgdexApiService tcgdexApiService)
     {
-        public string CardId { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string Number { get; set; } = "";
-        public string SetName { get; set; } = "";
-        public string Hp { get; set; } = "";
-        public int Score { get; set; }
-        public string DisplayText => $"{Name} #{Number} ({SetName}) HP={Hp} match={Score}%";
+        _tcgdexApiService = tcgdexApiService;
+        InitializeComponent();
     }
 
-    private static readonly HttpClient _http = new();
-
-    private async Task<List<CardResult>> LookupCardsAsync(string cardName, string? hpStr, string? llmLocalId = null, CancellationToken ct = default)
+    public async Task<List<CardResult>> LookupCardsAsync(string cardName, string? hpStr, string? llmLocalId = null, CancellationToken ct = default)
     {
-        var results = new List<CardResult>();
         try
         {
             ct.ThrowIfCancellationRequested();
-            var searchUrl = $"https://api.tcgdex.net/v2/en/cards?name={Uri.EscapeDataString(cardName)}";
-            LogInfo($"[PokeScanner] TCGdex search: {searchUrl}");
-            var response = await _http.GetAsync(searchUrl, ct);
-            LogInfo($"[PokeScanner] TCGdex response: {response.StatusCode}");
-            if (!response.IsSuccessStatusCode) return results;
+            LogInfo($"[PokeScanner] TCGdex search for: {cardName}");
+            var results = await _tcgdexApiService.SearchCardsAsync(cardName, ct);
+            LogInfo($"[PokeScanner] TCGdex found {results.Count} cards");
 
-            var briefJson = await response.Content.ReadAsStringAsync(ct);
-            using var briefDoc = JsonDocument.Parse(briefJson);
-            var briefCards = briefDoc.RootElement.EnumerateArray().ToList();
-            LogInfo($"[PokeScanner] TCGdex found {briefCards.Count} cards");
-
-            if (briefCards.Count == 0) return results;
+            if (results.Count == 0) return results;
 
             var lockObj = new object();
             var sem = new SemaphoreSlim(3);
-            var tasks = briefCards.Select(async brief =>
+            var tasks = results.Select(async card =>
             {
-                var cardId = brief.GetProperty("id").GetString() ?? "";
-                if (string.IsNullOrEmpty(cardId)) return;
-
                 await sem.WaitAsync(ct);
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    var fullUrl = $"https://api.tcgdex.net/v2/en/cards/{cardId}";
-                    var fullResponse = await _http.GetAsync(fullUrl, ct);
-                    if (!fullResponse.IsSuccessStatusCode) return;
 
-                    var fullJson = await fullResponse.Content.ReadAsStringAsync(ct);
-                    using var fullDoc = JsonDocument.Parse(fullJson);
-                    var card = fullDoc.RootElement;
-
-                    var apiName = card.GetProperty("name").GetString() ?? "";
-                    var apiNum = card.GetProperty("localId").GetString() ?? "";
-                    var apiHp = card.TryGetProperty("hp", out var hp) && hp.ValueKind == JsonValueKind.String
-                        ? hp.GetString() ?? "" : "-";
-
-                    string apiSetName = "";
-                    if (card.TryGetProperty("set", out var set) && set.ValueKind == JsonValueKind.Object)
-                        apiSetName = set.GetProperty("name").GetString() ?? "";
-
-                    int score = 0;
-                    if (apiName == cardName) score += 15;
-                    if (apiName.StartsWith(cardName, StringComparison.OrdinalIgnoreCase)) score += 5;
-                    if (!string.IsNullOrEmpty(hpStr) && apiHp == hpStr) score += 3;
-                    if (!string.IsNullOrEmpty(llmLocalId) && apiNum == llmLocalId) score += 10;
+                    int score = card.Score;
+                    if (!string.IsNullOrEmpty(hpStr) && card.Hp == hpStr) score += 3;
+                    if (!string.IsNullOrEmpty(llmLocalId) && card.Number == llmLocalId) score += 10;
 
                     lock (lockObj)
                     {
-                        results.Add(new CardResult
-                        {
-                            CardId = cardId,
-                            Name = apiName,
-                            Number = apiNum,
-                            SetName = apiSetName,
-                            Hp = apiHp,
-                            Score = score,
-                        });
+                        card.Score = score;
                     }
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
                 {
-                    LogInfo($"[PokeScanner] Error fetching {cardId}: {ex.Message}");
+                    LogInfo($"[PokeScanner] Error processing {card.CardId}: {ex.Message}");
                 }
                 finally
                 {
@@ -1066,7 +1025,7 @@ public partial class MainWindow : System.Windows.Window
         catch (Exception ex)
         {
             LogInfo($"[PokeScanner] TCGdex API error: {ex.Message}");
-            return results;
+            return new List<CardResult>();
         }
     }
 
