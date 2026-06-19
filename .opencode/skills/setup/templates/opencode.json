@@ -1,0 +1,62 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md"],
+  "default_agent": "build",
+  "skills": {
+    "paths": [".opencode/skills"{{GRILL_ME_PATHS_ENTRY}}]
+  },
+  "agent": {
+    "planner": {
+      "description": "Produces per-ticket implementation plans working within the existing architecture. Read-only. Never makes architecture decisions.",
+      "mode": "subagent",
+      {{MODEL_PLANNER_LINE}}
+      "permission": {
+        "edit": "deny",
+        "bash": "ask"
+      }
+    },
+    "solutions-architect": {
+      "description": "Designs overall solution structure, chooses technologies, defines high-level architecture, maintains architecture docs.",
+      "mode": "subagent",
+      {{MODEL_ARCHITECT_LINE}}
+      "permission": {
+        "edit": "allow",
+        "bash": "ask"
+      }
+    },
+    "coding-agent": {
+      "description": "Implements production code following AGENTS.md standards and the plan.",
+      {{MODEL_CODING_LINE}}
+      "mode": "subagent"
+    },
+    "test-specialist": {
+      "description": "Writes and maintains {{TEST_FRAMEWORK}} unit tests using the {{TEST_SKILL}} skill.",
+      {{MODEL_TEST_LINE}}
+      "mode": "subagent"
+    },
+    "reviewer": {
+      "description": "Read-only code review: checks standards, patterns, tests, and architecture compliance.",
+      "mode": "subagent",
+      {{MODEL_REVIEWER_LINE}}
+      "permission": {
+        "edit": "deny",
+        "bash": "ask"
+      }
+    },
+    "cleanup-agent": {
+      "description": "Final cleanup pass: add minimal instructive comments, remove AI conversational artifacts, organize imports, fix whitespace.",
+      "mode": "subagent",
+      {{MODEL_CLEANUP_LINE}}
+      "permission": {
+        "bash": "ask"
+      }
+    }
+  },
+  "command": {
+    "ticket": {
+      "description": "Start work on a ticket, e.g. /ticket TICKET1",
+      "template": "Read docs/Tasks/{arg}-*/requirement.md and docs/Tasks/{arg}-*/status.md (if exists). Follow the workflow in AGENTS.md. Use sub-agents: @planner -> @coding-agent -> @test-specialist -> @reviewer -> @solutions-architect -> @cleanup-agent. Present the plan to the user after @planner, show changes after @coding-agent, show test results after @test-specialist, and ask about commit at the end. Collect doc flags from each agent and pass them to @solutions-architect. After completing, update status.md with progress.",
+      "agent": "build"
+    }
+  }
+}

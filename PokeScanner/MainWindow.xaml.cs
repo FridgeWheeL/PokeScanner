@@ -1,11 +1,11 @@
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
-using Microsoft.Win32;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using Tesseract;
@@ -52,6 +52,11 @@ public partial class MainWindow : System.Windows.Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeMainWindow();
+    }
+
+    private void InitializeMainWindow()
+    {
         try { File.WriteAllText(LogPath, $"--- PokeScanner Debug Log {DateTime.Now:yyyy-MM-dd HH:mm:ss} ---\n"); } catch { }
         LogInfo("[PokeScanner] Log file: " + LogPath);
         LoadSettings();
@@ -170,7 +175,6 @@ public partial class MainWindow : System.Windows.Window
     {
         LogInfo("[PokeScanner] Window loaded");
 
-        // Test: show a solid green image to verify Image control works
         using var testMat = new Mat(480, 640, MatType.CV_8UC3, new Scalar(0, 255, 0));
         var testBmp = testMat.ToBitmapSource();
         CameraPreview.Source = testBmp;
@@ -973,6 +977,7 @@ public partial class MainWindow : System.Windows.Window
     {
         _tcgdexApiService = tcgdexApiService;
         InitializeComponent();
+        InitializeMainWindow();
     }
 
     public async Task<List<CardResult>> LookupCardsAsync(string cardName, string? hpStr, string? llmLocalId = null, CancellationToken ct = default)
