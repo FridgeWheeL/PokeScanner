@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: Use when designing or reviewing the project structure. Covers Clean Architecture layers, SOLID principles, CQRS, and dependency rules.
+description: Use when designing or reviewing the project structure. Covers {{ARCH_PATTERN}} layers, SOLID principles, CQRS, and dependency rules.
 ---
 
 # Architecture Standards
@@ -15,7 +15,7 @@ src/
   {Project}.Domain/           # Entities, Value Objects, Enums, Domain Events
   {Project}.Application/      # Commands, Queries, DTOs, Interfaces, Mapping,
                               #   Validators
-  {Project}.Infrastructure/   # None DbContext, Repositories,
+  {Project}.Infrastructure/   # {{ORMLIB}} DbContext, Repositories,
                               #   External Services
   {Project}.Api/              # Controllers, Middleware, Program.cs
 tests/

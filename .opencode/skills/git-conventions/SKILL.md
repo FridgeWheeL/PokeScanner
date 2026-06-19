@@ -9,15 +9,14 @@ description: Use when branching, committing, or reviewing PRs. Covers branch nam
 
 | Pattern | When |
 |---------|------|
-| `feat/TICKET-N` | New feature or enhancement |
-| `fix/TICKET-N` | Bug fix |
-| `chore/TICKET-N` | Maintenance, tooling, config, CI |
-| `refactor/TICKET-N` | Code restructuring, no behavior change |
-| `docs/TICKET-N` | Documentation only |
-| `test/TICKET-N` | Adding or fixing tests |
+| `feature/TICKETN` | New feature or enhancement |
+| `bugfix/TICKETN` | Bug fix |
+| `refactor/TICKETN` | Code restructuring, no behavior change |
+| `docs/TICKETN` | Documentation only |
+| `test/TICKETN` | Adding or fixing tests |
 
 Always reference a ticket number when one exists.
-Ticket artifacts live under `docs/TICKET-N/` (requirement, plan, status).
+Ticket artifacts live under `docs/Tasks/TICKETN-Short-Description/`.
 
 ## Commit messages
 
@@ -29,14 +28,14 @@ Use conventional commits:
 <body>
 ```
 
-- **Types**: `feat`, `fix`, `test`, `chore`, `refactor`, `docs`, `style`
+- **Types**: `feature`, `bugfix`, `test`, `refactor`, `docs`, `style`
 - **Scope**: optional, lowercase (e.g., `api`, `auth`, `ui`)
 - **Subject**: imperative mood, <=50 chars, no trailing period
 - **Body**: optional, wrap at 72 chars, explain *why* not *what*
 
 Examples:
 ```
-feat(auth): add JWT token refresh endpoint
+feature(auth): add JWT token refresh endpoint
 
 The existing token expiry of 15 minutes was too short for long-running
 sessions. This adds a /auth/refresh endpoint that issues a new token
@@ -44,7 +43,7 @@ given a valid refresh token.
 ```
 
 ```
-fix: handle null reference in OrderService.GetTotal
+bugfix: handle null reference in OrderService.GetTotal
 ```
 
 ```

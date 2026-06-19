@@ -56,9 +56,9 @@ Use blank lines between AAA sections.
 
 ```csharp
 [TestMethod]
-[DataRow(0, false)]
-[DataRow(1, true)]
-[DataRow(100, true)]
+[DataRow](0, false)
+[DataRow](1, true)
+[DataRow](100, true)
 public void IsEligible_WhenAgeIsGiven_ReturnsExpectedResult(
     int age, bool expected)
 {
@@ -92,14 +92,15 @@ public void GetById_WhenIdIsNegative_ThrowsArgumentOutOfRangeException()
 
 - Mock only external dependencies (repositories, HTTP clients, file system).
 - Never mock the system under test.
-- using Moq;
 
 ```csharp
-var mockRepo = new Mock<IRepository>();
-mockRepo.Setup(r => r.GetById(It.IsAny<int>())).Returns<Task<Widget>>(null);
+using Moq;
 
-var service = new WidgetService(mockRepo.Object);
-var result = await service.GetWidget(42);
+var repo = new Mock<T>().Object;
+repo.GetById(Arg.Any<int>()).Returns((Widget)null);
+
+var service = new WidgetService(repo);
+var result = service.GetWidget(42);
 result.Should().BeNull();
-mockRepo.Verify(r => r.GetById(42), Times.Once);
+repo.Verify()(1).GetById(42);
 ```

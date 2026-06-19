@@ -15,33 +15,28 @@ primary agent to fix.
 ## Review checklist
 
 ### Code standards
-- PascalCase public / `_camelCase` private?
-- XML docs on all public APIs?
-- Nullable reference types enabled, `ThrowIfNull` used?
+- Follows conventions defined in AGENTS.md section 2?
 - No magic strings/numbers?
-- Constructor injection, no property injection?
-- `IReadOnlyList<T>` for exposed collections?
-- Async methods suffixed with `Async`?
+- Consistent naming and file layout?
+- No obvious security issues (hardcoded secrets, injection risks)?
+- Proper error handling?
 
 ### Architecture
-- Dependencies flow inward (Domain → Application → Infrastructure →
-  Presentation)?
-- Application layer has no Infrastructure references?
-- Controllers only depend on Application layer?
-- Repositories are interfaces in Domain/Application, implementations in
-  Infrastructure?
+- Dependencies flow in the correct direction per the architecture?
+- No circular dependencies?
+- Follows the established patterns in `docs/Architecture/architecture.md`?
 
-### Tests
+### Tests (if applicable)
 - Tests exist for all new public methods?
 - Happy path + edge cases + error cases covered?
 - AAA structure followed?
 - No mocks on system under test?
 - No test depends on another test (ordering)?
-- `[TestClass]` / `[TestMethod]` used correctly?
-- `dotnet test` passes?
+- Test suite passes?
 
 ### Documentation
-- Do code changes diverge from `docs/architecture.md` or `docs/stack.md`?
+- Do code changes diverge from `docs/Architecture/architecture.md` or
+  `docs/Architecture/stack.md`?
 - Are any `docs/` references outdated?
 - Flag any drift with exact file, line, and suggested content.
 

@@ -19,6 +19,12 @@ using MSTest, Moq, and FluentAssertions.
    - Error paths (validation failures, not-found, unauthorized)
 5. Run `dotnet test` and fix any failures.
 6. Report coverage gaps.
+7. Output the test results:
+   - Tests passed / failed / skipped count
+   - Code coverage percentage if available
+
+Stop here. Do not proceed to the next step. The primary agent will present
+these results to the user for approval before continuing.
 
 ## Conventions
 
@@ -40,7 +46,7 @@ pattern, test category, test dependency), flag it with full detail:
 
 ```
 Documentation updates needed:
-  - Test infra change: <description> -> docs/stack.md: update Testing table
+  - Test infra change: <description> -> docs/Architecture/stack.md: update Testing table
   - New pattern: <description> -> dotnet-testing skill: add section
 Content: <specific text or snippet for each update>
 ```

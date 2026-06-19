@@ -3,7 +3,7 @@
   "instructions": ["AGENTS.md"],
   "default_agent": "build",
   "skills": {
-    "paths": [".opencode/skills"]
+    "paths": [".opencode/skills"{{GRILL_ME_PATHS_ENTRY}}]
   },
   "agent": {
     "planner": {

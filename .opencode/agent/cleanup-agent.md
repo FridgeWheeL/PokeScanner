@@ -55,5 +55,5 @@ Suggested fix: <specific edit>
 1. Scan all code files touched in this ticket/feature.
 2. Scan `docs/*.md` for issues (flag only, do not edit).
 3. Apply all allowed changes to code files only.
-4. Verify the project still compiles (`dotnet build` or `dotnet format`).
+4. Verify the project still builds (`dotnet build`, `npm run build`, etc.).
 5. Report all documentation flags to the primary agent.
